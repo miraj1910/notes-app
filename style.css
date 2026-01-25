@@ -5,12 +5,14 @@
 
 body {
   margin: 0;
-  background: #0b0f1a;
+  background: #020617;
   color: #e5e7eb;
   height: 100vh;
 }
 
-.hidden { display: none; }
+.hidden {
+  display: none;
+}
 
 #login-screen {
   height: 100vh;
@@ -20,12 +22,13 @@ body {
 }
 
 #login-btn {
-  padding: 12px 18px;
-  border-radius: 8px;
+  padding: 14px 20px;
+  border-radius: 10px;
   border: none;
   background: #2563eb;
   color: white;
   font-size: 16px;
+  cursor: pointer;
 }
 
 #app {
@@ -50,12 +53,16 @@ body {
 #notes-list {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 #notes-list li {
   padding: 8px;
   border-radius: 6px;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #notes-list li.active {
@@ -75,6 +82,7 @@ body {
   border: none;
   color: white;
   margin-bottom: 10px;
+  outline: none;
 }
 
 #note-content {
@@ -84,9 +92,12 @@ body {
   color: #e5e7eb;
   resize: none;
   font-size: 16px;
+  outline: none;
 }
 
 @media (max-width: 700px) {
-  .sidebar { width: 90px; }
-  #note-title { font-size: 18px; }
+  .sidebar {
+    width: 90px;
+  }
 }
+
