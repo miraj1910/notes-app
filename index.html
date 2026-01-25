@@ -1,28 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Glass Notes</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
   <h1>Glass Notes</h1>
   <button id="login-btn">Sign in with Google</button>
 </div>
 
-<!-- APP -->
 <div id="app" class="hidden">
   <aside class="sidebar">
-    <button id="new-note">＋ New Note</button>
+    <button id="new-note" class="add-btn">＋ New Note</button>
     <ul id="notes-list"></ul>
   </aside>
 
   <main class="editor">
-    <input id="note-title" placeholder="Title" />
+    <input id="note-title" placeholder="Untitled">
     <textarea id="note-content" placeholder="Start writing..."></textarea>
   </main>
 </div>

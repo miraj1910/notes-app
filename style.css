@@ -10,29 +10,25 @@ body {
   height: 100vh;
 }
 
-.hidden {
-  display: none;
-}
-
 /* LOGIN */
 #login-screen {
   height: 100vh;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at top, #1e293b, #020617);
 }
 
 #login-btn {
-  padding: 14px 20px;
-  border-radius: 10px;
+  padding: 12px 18px;
+  border-radius: 8px;
   border: none;
   background: #2563eb;
   color: white;
   font-size: 16px;
-  cursor: pointer;
 }
 
 /* APP */
+.hidden { display: none; }
+
 #app {
   display: flex;
   height: 100vh;
@@ -41,17 +37,23 @@ body {
 /* SIDEBAR */
 .sidebar {
   width: 260px;
-  background: rgba(2,6,23,.85);
-  backdrop-filter: blur(14px);
+  background: #020617;
+  border-right: 1px solid #1e293b;
   padding: 10px;
 }
 
-.sidebar button {
+.add-btn {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
+  background: #1e293b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
+/* NOTE LIST */
 #notes-list {
   list-style: none;
   padding: 0;
@@ -60,9 +62,10 @@ body {
 
 .note-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   padding: 6px;
+  margin-bottom: 4px;
   border-radius: 6px;
 }
 
@@ -78,16 +81,17 @@ body {
   text-overflow: ellipsis;
 }
 
+.note-actions {
+  display: flex;
+  gap: 6px;
+}
+
 .note-actions button {
   background: none;
   border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.note-actions button:hover {
   color: #e5e7eb;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 /* EDITOR */
@@ -113,14 +117,13 @@ body {
   border: none;
   color: #e5e7eb;
   resize: none;
-  font-size: 16px;
   outline: none;
 }
 
 /* MOBILE */
 @media (max-width: 700px) {
   .sidebar {
-    width: 90px;
+    width: 110px;
   }
 }
 
