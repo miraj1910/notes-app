@@ -1,179 +1,131 @@
 const CLIENT_ID = "874527368898-hif9voa0tommi94lmvvvjpaokmq5jciu.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
-
-
-/* ================= CONFIG ================= */
-/* ================= STATE ================= */
-
-let token = null;
-let tokenClient;
-let notes = [];
-let currentNote = null;
-let saveTimer;
-
-/* ================= DOM ================= */
-
-const loginScreen = document.getElementById("login-screen");
-const loginBtn = document.getElementById("login-btn");
-const app = document.getElementById("app");
-
-const newNoteBtn = document.getElementById("new-note");
+let token, tokenClient, currentNote, saveTimer;
 const notesList = document.getElementById("notes-list");
-
 const titleInput = document.getElementById("note-title");
 const contentInput = document.getElementById("note-content");
-
-/* ================= AUTH ================= */
 
 window.onload = () => {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
-    callback: onAuthSuccess
+    callback: r => {
+      token = r.access_token;
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("app").classList.remove("hidden");
+      loadNotes();
+    }
   });
 };
 
-loginBtn.onclick = () => {
+document.getElementById("login-btn").onclick = () =>
   tokenClient.requestAccessToken();
-};
 
-function onAuthSuccess(resp) {
-  if (!resp.access_token) {
-    alert("Login failed");
-    return;
-  }
-
-  token = resp.access_token;
-  loginScreen.style.display = "none";
-  app.classList.remove("hidden");
-
-  loadNotes();
-}
-
-/* ================= DRIVE ================= */
+document.getElementById("new-note").onclick = createNote;
 
 async function loadNotes() {
-  const res = await fetch(
+  const r = await fetch(
     "https://www.googleapis.com/drive/v3/files?q=name contains '.note.json'",
-    {
-      headers: { Authorization: `Bearer ${token}` }
-    }
-  );
-
-  const data = await res.json();
-  notes = data.files || [];
-  renderList();
-}
-
-function renderList() {
-  notesList.innerHTML = "";
-
-  const sorted = [...notes].sort(
-    (a, b) => (b.pinned === true) - (a.pinned === true)
-  );
-
-  sorted.forEach(file => {
-    const li = document.createElement("li");
-    li.className = "note-item";
-    if (file.pinned) li.classList.add("pinned");
-
-    const title = document.createElement("div");
-    title.className = "note-title";
-    title.textContent = file.name.replace(".note.json", "");
-    title.onclick = () => openNote(file.id);
-
-    const actions = document.createElement("div");
-    actions.className = "note-actions";
-
-    const pinBtn = document.createElement("button");
-    pinBtn.textContent = "📌";
-    pinBtn.onclick = (e) => {
-      e.stopPropagation();
-      togglePin(file.id);
-    };
-
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "🗑";
-    delBtn.onclick = (e) => {
-      e.stopPropagation();
-      deleteNote(file.id);
-    };
-
-    actions.appendChild(pinBtn);
-    actions.appendChild(delBtn);
-
-    li.appendChild(title);
-    li.appendChild(actions);
-    notesList.appendChild(li);
-  });
-}
-
-async function openNote(id) {
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
+  const d = await r.json();
+  renderList(d.files || []);
+}
 
-  currentNote = await res.json();
-  currentNote.id = id;
+function parseName(name) {
+  const pinned = name.startsWith("PIN__");
+  const title = name.replace("PIN__", "").replace(".note.json", "");
+  return { pinned, title };
+}
 
-  titleInput.value = currentNote.title || "";
+function renderList(files) {
+  notesList.innerHTML = "";
+
+  files
+    .map(f => ({ ...f, ...parseName(f.name) }))
+    .sort((a, b) => b.pinned - a.pinned)
+    .forEach(f => {
+      const li = document.createElement("li");
+      li.className = "note-item";
+
+      const t = document.createElement("div");
+      t.className = "note-title";
+      t.textContent = f.title || "Untitled";
+      t.onclick = () => openNote(f);
+
+      const a = document.createElement("div");
+      a.className = "note-actions";
+
+      const p = document.createElement("button");
+      p.textContent = "📌";
+      p.onclick = e => { e.stopPropagation(); togglePin(f); };
+
+      const d = document.createElement("button");
+      d.textContent = "🗑";
+      d.onclick = e => { e.stopPropagation(); deleteNote(f.id); };
+
+      a.append(p, d);
+      li.append(t, a);
+      notesList.appendChild(li);
+    });
+}
+
+async function openNote(file) {
+  const r = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  currentNote = await r.json();
+  currentNote.id = file.id;
+  titleInput.value = file.title || "Untitled";
   contentInput.value = currentNote.content || "";
 }
 
-/* ================= CREATE ================= */
+async function createNote() {
+  const meta = await fetch("https://www.googleapis.com/drive/v3/files", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: "Untitled.note.json",
+      mimeType: "application/json"
+    })
+  });
 
-newNoteBtn.onclick = async () => {
-  const meta = await fetch(
-    "https://www.googleapis.com/drive/v3/files",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name: `note-${Date.now()}.note.json`,
-        mimeType: "application/json"
-      })
-    }
-  );
+  const f = await meta.json();
 
-  const file = await meta.json();
-
-  const note = {
-    title: "Untitled",
-    content: "",
-    pinned: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-
-  await upload(file.id, note);
+  await upload(f.id, { content: "" });
   loadNotes();
-  openNote(file.id);
-};
-
-/* ================= SAVE ================= */
-
-function scheduleSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNote, 500);
 }
 
 async function saveNote() {
   if (!currentNote) return;
 
-  currentNote.title = titleInput.value;
-  currentNote.content = contentInput.value;
-  currentNote.updatedAt = new Date().toISOString();
+  const title = titleInput.value || "Untitled";
+  const name = `${title}.note.json`;
 
+  await fetch(
+    `https://www.googleapis.com/drive/v3/files/${currentNote.id}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ name })
+    }
+  );
+
+  currentNote.content = contentInput.value;
   await upload(currentNote.id, currentNote);
+  loadNotes();
 }
 
-async function upload(id, data) {
-  await fetch(
+function upload(id, data) {
+  return fetch(
     `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=media`,
     {
       method: "PATCH",
@@ -186,31 +138,29 @@ async function upload(id, data) {
   );
 }
 
-titleInput.oninput = scheduleSave;
-contentInput.oninput = scheduleSave;
+titleInput.oninput = contentInput.oninput = () => {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNote, 500);
+};
 
-/* ================= PIN ================= */
-
-async function togglePin(id) {
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
-    { headers: { Authorization: `Bearer ${token}` } }
+async function togglePin(f) {
+  const newName = (f.pinned ? "" : "PIN__") + f.title + ".note.json";
+  await fetch(
+    `https://www.googleapis.com/drive/v3/files/${f.id}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ name: newName })
+    }
   );
-
-  const note = await res.json();
-  note.id = id;
-  note.pinned = !note.pinned;
-  note.updatedAt = new Date().toISOString();
-
-  await upload(id, note);
   loadNotes();
 }
 
-/* ================= DELETE ================= */
-
 async function deleteNote(id) {
-  if (!confirm("Delete this note permanently?")) return;
-
+  if (!confirm("Delete this note?")) return;
   await fetch(
     `https://www.googleapis.com/drive/v3/files/${id}`,
     {
@@ -218,14 +168,6 @@ async function deleteNote(id) {
       headers: { Authorization: `Bearer ${token}` }
     }
   );
-
-  if (currentNote?.id === id) {
-    currentNote = null;
-    titleInput.value = "";
-    contentInput.value = "";
-  }
-
   loadNotes();
 }
-
 
