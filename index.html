@@ -8,11 +8,13 @@
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
 <div id="login-screen">
   <h1>Glass Notes</h1>
   <button id="login-btn">Sign in with Google</button>
 </div>
 
+<!-- APP -->
 <div id="app" class="hidden">
   <aside class="sidebar">
     <button id="new-note">＋ New Note</button>
@@ -20,20 +22,15 @@
   </aside>
 
   <main class="editor">
-    <div class="editor-bar">
-      <input id="note-title" placeholder="Title" />
-      <div class="actions">
-        <button id="pin-btn">📌</button>
-        <button id="delete-btn">🗑</button>
-      </div>
-    </div>
-
+    <input id="note-title" placeholder="Title" />
     <textarea id="note-content" placeholder="Start writing..."></textarea>
   </main>
 </div>
 
+<!-- GOOGLE OAUTH -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="app.js"></script>
+
 </body>
 </html>
 

@@ -2,6 +2,12 @@ const CLIENT_ID = "874527368898-hif9voa0tommi94lmvvvjpaokmq5jciu.apps.googleuser
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
 
+
+/* ================= CONFIG ================= */
+
+const CLIENT_ID = "PASTE_YOUR_GOOGLE_CLIENT_ID_HERE";
+const SCOPES = "https://www.googleapis.com/auth/drive.file";
+
 /* ================= STATE ================= */
 
 let token = null;
@@ -22,9 +28,6 @@ const notesList = document.getElementById("notes-list");
 const titleInput = document.getElementById("note-title");
 const contentInput = document.getElementById("note-content");
 
-const pinBtn = document.getElementById("pin-btn");
-const deleteBtn = document.getElementById("delete-btn");
-
 /* ================= AUTH ================= */
 
 window.onload = () => {
@@ -40,9 +43,15 @@ loginBtn.onclick = () => {
 };
 
 function onAuthSuccess(resp) {
+  if (!resp.access_token) {
+    alert("Login failed");
+    return;
+  }
+
   token = resp.access_token;
   loginScreen.style.display = "none";
   app.classList.remove("hidden");
+
   loadNotes();
 }
 
@@ -51,7 +60,9 @@ function onAuthSuccess(resp) {
 async function loadNotes() {
   const res = await fetch(
     "https://www.googleapis.com/drive/v3/files?q=name contains '.note.json'",
-    { headers: { Authorization: `Bearer ${token}` } }
+    {
+      headers: { Authorization: `Bearer ${token}` }
+    }
   );
 
   const data = await res.json();
@@ -62,15 +73,42 @@ async function loadNotes() {
 function renderList() {
   notesList.innerHTML = "";
 
-  const sorted = [...notes].sort((a, b) => {
-    return (b.pinned === true) - (a.pinned === true);
-  });
+  const sorted = [...notes].sort(
+    (a, b) => (b.pinned === true) - (a.pinned === true)
+  );
 
   sorted.forEach(file => {
     const li = document.createElement("li");
-    li.textContent = file.name.replace(".note.json", "");
+    li.className = "note-item";
     if (file.pinned) li.classList.add("pinned");
-    li.onclick = () => openNote(file.id);
+
+    const title = document.createElement("div");
+    title.className = "note-title";
+    title.textContent = file.name.replace(".note.json", "");
+    title.onclick = () => openNote(file.id);
+
+    const actions = document.createElement("div");
+    actions.className = "note-actions";
+
+    const pinBtn = document.createElement("button");
+    pinBtn.textContent = "📌";
+    pinBtn.onclick = (e) => {
+      e.stopPropagation();
+      togglePin(file.id);
+    };
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "🗑";
+    delBtn.onclick = (e) => {
+      e.stopPropagation();
+      deleteNote(file.id);
+    };
+
+    actions.appendChild(pinBtn);
+    actions.appendChild(delBtn);
+
+    li.appendChild(title);
+    li.appendChild(actions);
     notesList.appendChild(li);
   });
 }
@@ -157,31 +195,41 @@ contentInput.oninput = scheduleSave;
 
 /* ================= PIN ================= */
 
-pinBtn.onclick = async () => {
-  if (!currentNote) return;
-  currentNote.pinned = !currentNote.pinned;
-  await saveNote();
+async function togglePin(id) {
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+
+  const note = await res.json();
+  note.id = id;
+  note.pinned = !note.pinned;
+  note.updatedAt = new Date().toISOString();
+
+  await upload(id, note);
   loadNotes();
-};
+}
 
 /* ================= DELETE ================= */
 
-deleteBtn.onclick = async () => {
-  if (!currentNote) return;
-
+async function deleteNote(id) {
   if (!confirm("Delete this note permanently?")) return;
 
   await fetch(
-    `https://www.googleapis.com/drive/v3/files/${currentNote.id}`,
+    `https://www.googleapis.com/drive/v3/files/${id}`,
     {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
     }
   );
 
-  currentNote = null;
-  titleInput.value = "";
-  contentInput.value = "";
+  if (currentNote?.id === id) {
+    currentNote = null;
+    titleInput.value = "";
+    contentInput.value = "";
+  }
+
   loadNotes();
-};
+}
+
 

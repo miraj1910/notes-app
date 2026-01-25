@@ -1,23 +1,133 @@
-.editor-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+* {
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
 }
 
-.actions button {
-  background: transparent;
-  border: none;
+body {
+  margin: 0;
+  background: #020617;
   color: #e5e7eb;
-  font-size: 18px;
+  height: 100vh;
+}
+
+.hidden {
+  display: none;
+}
+
+/* LOGIN */
+#login-screen {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at top, #1e293b, #020617);
+}
+
+#login-btn {
+  padding: 14px 20px;
+  border-radius: 10px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-size: 16px;
   cursor: pointer;
 }
 
-.actions button:hover {
-  opacity: 0.7;
+/* APP */
+#app {
+  display: flex;
+  height: 100vh;
 }
 
-#notes-list li.pinned::before {
+/* SIDEBAR */
+.sidebar {
+  width: 260px;
+  background: rgba(2,6,23,.85);
+  backdrop-filter: blur(14px);
+  border-right: 1px solid #1e293b;
+  padding: 10px;
+}
+
+.sidebar button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+#notes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* NOTE LIST ITEM */
+.note-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.note-item:hover {
+  background: #1e293b;
+}
+
+.note-title {
+  flex: 1;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.note-item.pinned .note-title::before {
   content: "📌 ";
+}
+
+.note-actions button {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.note-actions button:hover {
+  color: #e5e7eb;
+}
+
+/* EDITOR */
+.editor {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+#note-title {
+  font-size: 22px;
+  background: transparent;
+  border: none;
+  color: white;
+  margin-bottom: 10px;
+  outline: none;
+}
+
+#note-content {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #e5e7eb;
+  resize: none;
+  font-size: 16px;
+  outline: none;
+}
+
+/* MOBILE */
+@media (max-width: 700px) {
+  .sidebar {
+    width: 90px;
+  }
 }
 
