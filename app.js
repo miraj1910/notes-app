@@ -4,10 +4,6 @@ const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
 
 /* ================= CONFIG ================= */
-
-const CLIENT_ID = "PASTE_YOUR_GOOGLE_CLIENT_ID_HERE";
-const SCOPES = "https://www.googleapis.com/auth/drive.file";
-
 /* ================= STATE ================= */
 
 let token = null;
