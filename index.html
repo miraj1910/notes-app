@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Glass Notes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div id="login-screen">
+  <h1>Glass Notes</h1>
+  <button id="login-btn">Sign in with Google</button>
+</div>
+
+<div id="app" class="hidden">
+  <aside class="sidebar">
+    <button id="new-note">＋ New Note</button>
+    <ul id="notes-list"></ul>
+  </aside>
+
+  <main class="editor">
+    <input id="note-title" placeholder="Title"/>
+    <textarea id="note-content" placeholder="Start writing..."></textarea>
+  </main>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="app.js"></script>
+</body>
+</html>

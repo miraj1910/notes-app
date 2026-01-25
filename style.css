@@ -1,0 +1,92 @@
+* {
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0b0f1a;
+  color: #e5e7eb;
+  height: 100vh;
+}
+
+.hidden { display: none; }
+
+#login-screen {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at top, #1e293b, #020617);
+}
+
+#login-btn {
+  padding: 12px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-size: 16px;
+}
+
+#app {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 260px;
+  background: rgba(2,6,23,.85);
+  backdrop-filter: blur(14px);
+  border-right: 1px solid #1e293b;
+  padding: 10px;
+}
+
+.sidebar button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+#notes-list {
+  list-style: none;
+  padding: 0;
+}
+
+#notes-list li {
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#notes-list li.active {
+  background: #1e293b;
+}
+
+.editor {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+#note-title {
+  font-size: 22px;
+  background: transparent;
+  border: none;
+  color: white;
+  margin-bottom: 10px;
+}
+
+#note-content {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #e5e7eb;
+  resize: none;
+  font-size: 16px;
+}
+
+@media (max-width: 700px) {
+  .sidebar { width: 90px; }
+  #note-title { font-size: 18px; }
+}
