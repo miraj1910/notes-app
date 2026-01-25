@@ -1,41 +1,69 @@
 const CLIENT_ID = "874527368898-hif9voa0tommi94lmvvvjpaokmq5jciu.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
-let token, tokenClient, currentNote, saveTimer;
+/* ================= CONFIG ================= */
+
+/* ================= STATE ================= */
+
+let token;
+let tokenClient;
+let currentNote = null;
+let saveTimer;
+
+/* ================= DOM ================= */
+
+const loginScreen = document.getElementById("login-screen");
+const loginBtn = document.getElementById("login-btn");
+const app = document.getElementById("app");
+
+const newNoteBtn = document.getElementById("new-note");
 const notesList = document.getElementById("notes-list");
+
 const titleInput = document.getElementById("note-title");
 const contentInput = document.getElementById("note-content");
+
+/* ================= HELPERS ================= */
+
+function safeTitle(title) {
+  return title
+    .replace(/[\\\/?#%:*|"<>]/g, "")
+    .trim()
+    .substring(0, 100) || "Untitled";
+}
+
+/* ================= AUTH ================= */
 
 window.onload = () => {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
-    callback: r => {
-      token = r.access_token;
-      document.getElementById("login-screen").style.display = "none";
-      document.getElementById("app").classList.remove("hidden");
+    callback: (resp) => {
+      token = resp.access_token;
+      loginScreen.style.display = "none";
+      app.classList.remove("hidden");
       loadNotes();
     }
   });
 };
 
-document.getElementById("login-btn").onclick = () =>
-  tokenClient.requestAccessToken();
+loginBtn.onclick = () => tokenClient.requestAccessToken();
 
-document.getElementById("new-note").onclick = createNote;
+/* ================= DRIVE ================= */
 
 async function loadNotes() {
-  const r = await fetch(
+  const res = await fetch(
     "https://www.googleapis.com/drive/v3/files?q=name contains '.note.json'",
     { headers: { Authorization: `Bearer ${token}` } }
   );
-  const d = await r.json();
-  renderList(d.files || []);
+  const data = await res.json();
+  renderList(data.files || []);
 }
 
 function parseName(name) {
   const pinned = name.startsWith("PIN__");
-  const title = name.replace("PIN__", "").replace(".note.json", "");
+  const title = name
+    .replace("PIN__", "")
+    .replace(".note.json", "") || "Untitled";
   return { pinned, title };
 }
 
@@ -49,63 +77,84 @@ function renderList(files) {
       const li = document.createElement("li");
       li.className = "note-item";
 
-      const t = document.createElement("div");
-      t.className = "note-title";
-      t.textContent = f.title || "Untitled";
-      t.onclick = () => openNote(f);
+      const title = document.createElement("div");
+      title.className = "note-title";
+      title.textContent = f.title;
+      title.onclick = () => openNote(f);
 
-      const a = document.createElement("div");
-      a.className = "note-actions";
+      const actions = document.createElement("div");
+      actions.className = "note-actions";
 
-      const p = document.createElement("button");
-      p.textContent = "📌";
-      p.onclick = e => { e.stopPropagation(); togglePin(f); };
+      const pin = document.createElement("button");
+      pin.textContent = "📌";
+      pin.onclick = (e) => {
+        e.stopPropagation();
+        togglePin(f);
+      };
 
-      const d = document.createElement("button");
-      d.textContent = "🗑";
-      d.onclick = e => { e.stopPropagation(); deleteNote(f.id); };
+      const del = document.createElement("button");
+      del.textContent = "🗑";
+      del.onclick = (e) => {
+        e.stopPropagation();
+        deleteNote(f.id);
+      };
 
-      a.append(p, d);
-      li.append(t, a);
+      actions.append(pin, del);
+      li.append(title, actions);
       notesList.appendChild(li);
     });
 }
 
 async function openNote(file) {
-  const r = await fetch(
+  const res = await fetch(
     `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
-  currentNote = await r.json();
+
+  currentNote = await res.json();
   currentNote.id = file.id;
-  titleInput.value = file.title || "Untitled";
+  currentNote.pinned = file.pinned;
+
+  titleInput.value = file.title;
   contentInput.value = currentNote.content || "";
 }
 
-async function createNote() {
-  const meta = await fetch("https://www.googleapis.com/drive/v3/files", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      name: "Untitled.note.json",
-      mimeType: "application/json"
-    })
-  });
+/* ================= CREATE ================= */
 
-  const f = await meta.json();
+newNoteBtn.onclick = async () => {
+  const meta = await fetch(
+    "https://www.googleapis.com/drive/v3/files",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: "Untitled.note.json",
+        mimeType: "application/json"
+      })
+    }
+  );
 
-  await upload(f.id, { content: "" });
+  const file = await meta.json();
+
+  await upload(file.id, { content: "" });
   loadNotes();
+};
+
+/* ================= SAVE ================= */
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNote, 500);
 }
 
 async function saveNote() {
   if (!currentNote) return;
 
-  const title = titleInput.value || "Untitled";
-  const name = `${title}.note.json`;
+  const title = safeTitle(titleInput.value);
+  const name = `${currentNote.pinned ? "PIN__" : ""}${title}.note.json`;
 
   await fetch(
     `https://www.googleapis.com/drive/v3/files/${currentNote.id}`,
@@ -124,8 +173,8 @@ async function saveNote() {
   loadNotes();
 }
 
-function upload(id, data) {
-  return fetch(
+async function upload(id, data) {
+  await fetch(
     `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=media`,
     {
       method: "PATCH",
@@ -138,29 +187,35 @@ function upload(id, data) {
   );
 }
 
-titleInput.oninput = contentInput.oninput = () => {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNote, 500);
-};
+titleInput.oninput = scheduleSave;
+contentInput.oninput = scheduleSave;
 
-async function togglePin(f) {
-  const newName = (f.pinned ? "" : "PIN__") + f.title + ".note.json";
+/* ================= PIN ================= */
+
+async function togglePin(file) {
+  const title = safeTitle(file.title);
+  const name = `${file.pinned ? "" : "PIN__"}${title}.note.json`;
+
   await fetch(
-    `https://www.googleapis.com/drive/v3/files/${f.id}`,
+    `https://www.googleapis.com/drive/v3/files/${file.id}`,
     {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ name: newName })
+      body: JSON.stringify({ name })
     }
   );
+
   loadNotes();
 }
 
+/* ================= DELETE ================= */
+
 async function deleteNote(id) {
-  if (!confirm("Delete this note?")) return;
+  if (!confirm("Delete this note permanently?")) return;
+
   await fetch(
     `https://www.googleapis.com/drive/v3/files/${id}`,
     {
@@ -168,6 +223,12 @@ async function deleteNote(id) {
       headers: { Authorization: `Bearer ${token}` }
     }
   );
+
+  if (currentNote?.id === id) {
+    currentNote = null;
+    titleInput.value = "";
+    contentInput.value = "";
+  }
+
   loadNotes();
 }
-
