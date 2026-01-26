@@ -1,18 +1,31 @@
 const CLIENT_ID = "1004015951669-j47ig0pr5bvihs6rpq1osp1hibf8evdh.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
-let token, tokenClient;
+/* ================= CONFIG ================= */
+
+const CLIENT_ID = "PASTE_YOUR_GOOGLE_CLIENT_ID_HERE";
+const SCOPES = "https://www.googleapis.com/auth/drive.file";
+
+/* ================= STATE ================= */
+
+let token;
+let tokenClient;
 let currentNoteId = null;
-let saveTimer;
+let saveTimer = null;
+
+/* ================= DOM ================= */
 
 const loginScreen = document.getElementById("login-screen");
 const app = document.getElementById("app");
+const loginBtn = document.getElementById("login-btn");
+const newNoteBtn = document.getElementById("new-note");
+
 const notesList = document.getElementById("notes-list");
 const titleInput = document.getElementById("note-title");
 const contentInput = document.getElementById("note-content");
-const newNoteBtn = document.getElementById("new-note");
 
-/* ---------- SAFE GOOGLE INIT ---------- */
+/* ================= SAFE GOOGLE INIT ================= */
+
 function waitForGoogle() {
   return new Promise(resolve => {
     const check = () => {
@@ -29,33 +42,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
-    callback: authSuccess
+    callback: onAuthSuccess
   });
 
-  document.getElementById("login-btn").onclick = () =>
-    tokenClient.requestAccessToken();
-
+  loginBtn.onclick = () => tokenClient.requestAccessToken();
   newNoteBtn.onclick = createNote;
 });
 
-/* ---------- AUTH ---------- */
-function authSuccess(resp) {
+/* ================= AUTH ================= */
+
+function onAuthSuccess(resp) {
   if (!resp.access_token) {
-    alert("Login failed");
+    alert("Google login failed");
     return;
   }
+
   token = resp.access_token;
   loginScreen.style.display = "none";
   app.classList.remove("hidden");
   loadNotes();
 }
 
-/* ---------- DRIVE HELPERS ---------- */
-async function driveGET(url) {
-  return fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+/* ================= DRIVE HELPERS ================= */
+
+function driveGET(url) {
+  return fetch(url, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 }
 
-async function drivePATCH(url, body) {
+function drivePATCH(url, body) {
   return fetch(url, {
     method: "PATCH",
     headers: {
@@ -66,38 +82,27 @@ async function drivePATCH(url, body) {
   });
 }
 
-/* ---------- LOAD NOTES ---------- */
+/* ================= LOAD NOTES (SIDEBAR) ================= */
 
-
-  async function saveNote() {
-  if (!currentNoteId) return;
-
-  const payload = {
-    title: titleInput.value || "Untitled",
-    content: contentInput.value
-  };
-
-  await fetch(
-    `https://www.googleapis.com/upload/drive/v3/files/${currentNoteId}?uploadType=media`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    }
+async function loadNotes() {
+  const res = await driveGET(
+    "https://www.googleapis.com/drive/v3/files" +
+    "?q=mimeType='application/json'" +
+    "&spaces=drive" +
+    "&fields=files(id)"
   );
 
-  // update sidebar title only (no full reload)
-  const item = document.querySelector(
-    `.note-item[data-id="${currentNoteId}"] .note-title`
-  );
-  if (item) item.textContent = payload.title;
+  const data = await res.json();
+  notesList.innerHTML = "";
+
+  for (const f of data.files) {
+    const note = await loadNoteContent(f.id);
+    addNoteToList(f.id, note.title || "Untitled");
+  }
 }
 
+/* ================= LOAD SINGLE NOTE ================= */
 
-/* ---------- LOAD NOTE CONTENT ---------- */
 async function loadNoteContent(id) {
   const res = await driveGET(
     `https://www.googleapis.com/drive/v3/files/${id}?alt=media`
@@ -105,7 +110,8 @@ async function loadNoteContent(id) {
   return res.json();
 }
 
-/* ---------- RENDER LIST ---------- */
+/* ================= RENDER SIDEBAR ITEM ================= */
+
 function addNoteToList(id, title) {
   const li = document.createElement("li");
   li.className = "note-item";
@@ -132,8 +138,8 @@ function addNoteToList(id, title) {
   notesList.appendChild(li);
 }
 
+/* ================= OPEN NOTE ================= */
 
-/* ---------- OPEN ---------- */
 async function openNote(id) {
   const note = await loadNoteContent(id);
   currentNoteId = id;
@@ -141,7 +147,8 @@ async function openNote(id) {
   contentInput.value = note.content || "";
 }
 
-/* ---------- CREATE ---------- */
+/* ================= CREATE NOTE ================= */
+
 async function createNote() {
   const res = await fetch(
     "https://www.googleapis.com/drive/v3/files?fields=id",
@@ -168,10 +175,12 @@ async function createNote() {
   currentNoteId = file.id;
   titleInput.value = "Untitled";
   contentInput.value = "";
+
   loadNotes();
 }
 
-/* ---------- AUTOSAVE ---------- */
+/* ================= AUTOSAVE (NO BLINKING) ================= */
+
 function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNote, 500);
@@ -180,21 +189,29 @@ function scheduleSave() {
 async function saveNote() {
   if (!currentNoteId) return;
 
+  const payload = {
+    title: titleInput.value || "Untitled",
+    content: contentInput.value
+  };
+
   await drivePATCH(
     `https://www.googleapis.com/upload/drive/v3/files/${currentNoteId}?uploadType=media`,
-    {
-      title: titleInput.value || "Untitled",
-      content: contentInput.value
-    }
+    payload
   );
 
-  loadNotes();
+  // Update sidebar title ONLY (no reload)
+  const titleEl = document.querySelector(
+    `.note-item[data-id="${currentNoteId}"] .note-title`
+  );
+
+  if (titleEl) titleEl.textContent = payload.title;
 }
 
 titleInput.oninput = scheduleSave;
 contentInput.oninput = scheduleSave;
 
-/* ---------- DELETE ---------- */
+/* ================= DELETE NOTE ================= */
+
 async function deleteNote(id) {
   if (!confirm("Delete this note?")) return;
 
@@ -214,4 +231,4 @@ async function deleteNote(id) {
 
   loadNotes();
 }
- 
+
