@@ -38,16 +38,31 @@ function cleanTitle(t) {
 }
 
 /* ---------- LOAD NOTES ---------- */
-
 async function loadNotes() {
-  const res = await fetch(
-    "https://www.googleapis.com/drive/v3/files?q=name contains '.note.json'",
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
+  const url =
+    "https://www.googleapis.com/drive/v3/files" +
+    "?q=name contains '.note.json'" +
+    "&spaces=drive" +
+    "&fields=files(id,name)" +
+    "&pageSize=100";
+
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("Drive list error:", err);
+    alert("Drive error. Check console.");
+    return;
+  }
 
   const data = await res.json();
   renderList(data.files || []);
 }
+
 
 function renderList(files) {
   notesList.innerHTML = "";
