@@ -67,22 +67,35 @@ async function drivePATCH(url, body) {
 }
 
 /* ---------- LOAD NOTES ---------- */
-async function loadNotes() {
-  const res = await driveGET(
-    "https://www.googleapis.com/drive/v3/files" +
-    "?q=mimeType='application/json'" +
-    "&spaces=drive" +
-    "&fields=files(id)"
+
+
+  async function saveNote() {
+  if (!currentNoteId) return;
+
+  const payload = {
+    title: titleInput.value || "Untitled",
+    content: contentInput.value
+  };
+
+  await fetch(
+    `https://www.googleapis.com/upload/drive/v3/files/${currentNoteId}?uploadType=media`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    }
   );
 
-  const data = await res.json();
-  notesList.innerHTML = "";
-
-  for (const f of data.files) {
-    const note = await loadNoteContent(f.id);
-    addNoteToList(f.id, note.title || "Untitled");
-  }
+  // update sidebar title only (no full reload)
+  const item = document.querySelector(
+    `.note-item[data-id="${currentNoteId}"] .note-title`
+  );
+  if (item) item.textContent = payload.title;
 }
+
 
 /* ---------- LOAD NOTE CONTENT ---------- */
 async function loadNoteContent(id) {
@@ -96,15 +109,20 @@ async function loadNoteContent(id) {
 function addNoteToList(id, title) {
   const li = document.createElement("li");
   li.className = "note-item";
+  li.dataset.id = id;
 
   const t = document.createElement("div");
   t.className = "note-title";
-  t.textContent = title;
+  t.textContent = title || "Untitled";
   t.onclick = () => openNote(id);
 
   const del = document.createElement("button");
+  del.type = "button";
+  del.className = "note-delete-btn";
   del.textContent = "🗑";
-  del.onclick = e => {
+
+  del.onclick = (e) => {
+    e.preventDefault();
     e.stopPropagation();
     deleteNote(id);
   };
@@ -113,6 +131,7 @@ function addNoteToList(id, title) {
   li.appendChild(del);
   notesList.appendChild(li);
 }
+
 
 /* ---------- OPEN ---------- */
 async function openNote(id) {
@@ -195,3 +214,4 @@ async function deleteNote(id) {
 
   loadNotes();
 }
+ 
