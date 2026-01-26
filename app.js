@@ -80,6 +80,14 @@ function renderList(files) {
   });
 }
 
+// after renderList(), call this helper when opening a note
+function markSelected(id){
+  document.querySelectorAll('.note-item').forEach(li=>{
+    li.classList.toggle('selected', li.dataset.id === id);
+  });
+}
+
+
 /* ---------- OPEN ---------- */
 
 async function openNote(id, title) {
