@@ -1,11 +1,6 @@
 const CLIENT_ID = "1004015951669-j47ig0pr5bvihs6rpq1osp1hibf8evdh.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
-/* ================= CONFIG ================= */
-
-const CLIENT_ID = "PASTE_YOUR_GOOGLE_CLIENT_ID_HERE";
-const SCOPES = "https://www.googleapis.com/auth/drive.file";
-
 /* ================= STATE ================= */
 
 let token;
@@ -24,36 +19,29 @@ const notesList = document.getElementById("notes-list");
 const titleInput = document.getElementById("note-title");
 const contentInput = document.getElementById("note-content");
 
-/* ================= SAFE GOOGLE INIT ================= */
+/* ================= GOOGLE SCRIPT READY ================= */
 
-function waitForGoogle() {
-  return new Promise(resolve => {
-    const check = () => {
-      if (window.google?.accounts?.oauth2) resolve();
-      else setTimeout(check, 50);
-    };
-    check();
-  });
-}
-
-document.addEventListener("DOMContentLoaded", async () => {
-  await waitForGoogle();
-
+// Google calls this automatically when gsi script is loaded
+window.onGoogleLibraryLoad = () => {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
     callback: onAuthSuccess
   });
 
-  loginBtn.onclick = () => tokenClient.requestAccessToken();
+  // attach click ONLY after tokenClient exists
+  loginBtn.onclick = () => {
+    tokenClient.requestAccessToken();
+  };
+
   newNoteBtn.onclick = createNote;
-});
+};
 
 /* ================= AUTH ================= */
 
 function onAuthSuccess(resp) {
-  if (!resp.access_token) {
-    alert("Google login failed");
+  if (!resp || !resp.access_token) {
+    alert("Google sign-in failed");
     return;
   }
 
@@ -82,7 +70,7 @@ function drivePATCH(url, body) {
   });
 }
 
-/* ================= LOAD NOTES (SIDEBAR) ================= */
+/* ================= LOAD NOTES ================= */
 
 async function loadNotes() {
   const res = await driveGET(
@@ -110,7 +98,7 @@ async function loadNoteContent(id) {
   return res.json();
 }
 
-/* ================= RENDER SIDEBAR ITEM ================= */
+/* ================= SIDEBAR ITEM ================= */
 
 function addNoteToList(id, title) {
   const li = document.createElement("li");
@@ -179,7 +167,7 @@ async function createNote() {
   loadNotes();
 }
 
-/* ================= AUTOSAVE (NO BLINKING) ================= */
+/* ================= AUTOSAVE ================= */
 
 function scheduleSave() {
   clearTimeout(saveTimer);
@@ -199,11 +187,9 @@ async function saveNote() {
     payload
   );
 
-  // Update sidebar title ONLY (no reload)
   const titleEl = document.querySelector(
     `.note-item[data-id="${currentNoteId}"] .note-title`
   );
-
   if (titleEl) titleEl.textContent = payload.title;
 }
 
