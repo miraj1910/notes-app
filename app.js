@@ -1,26 +1,32 @@
 const CLIENT_ID = "874527368898-hif9voa0tommi94lmvvvjpaokmq5jciu.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
+const CLIENT_ID = "PASTE_YOUR_GOOGLE_CLIENT_ID_HERE";
+const SCOPES = "https://www.googleapis.com/auth/drive.file";
+
 let token;
 let tokenClient;
-let currentFileId = null;
-let saveTimer;
 
 const loginScreen = document.getElementById("login-screen");
 const app = document.getElementById("app");
 const notesList = document.getElementById("notes-list");
-const titleInput = document.getElementById("note-title");
-const contentInput = document.getElementById("note-content");
+
+/* ================= AUTH ================= */
 
 window.onload = () => {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
     scope: SCOPES,
     callback: (resp) => {
+      if (!resp.access_token) {
+        console.error("OAuth failed", resp);
+        return;
+      }
+
       token = resp.access_token;
       loginScreen.style.display = "none";
       app.classList.remove("hidden");
-      loadNotes();
+      listNotes();
     }
   });
 };
@@ -31,20 +37,14 @@ document.getElementById("login-btn").onclick = () => {
 
 document.getElementById("new-note").onclick = createNote;
 
-/* ---------- HELPERS ---------- */
+/* ================= LIST NOTES ================= */
 
-function cleanTitle(t) {
-  return t.replace(/[\\\/?#%:*|"<>]/g, "").trim() || "Untitled";
-}
-
-/* ---------- LOAD NOTES ---------- */
-async function loadNotes() {
+async function listNotes() {
   const url =
     "https://www.googleapis.com/drive/v3/files" +
-    "?q=name contains '.note.json'" +
+    "?q=name%20contains%20'.note.json'" +
     "&spaces=drive" +
-    "&fields=files(id,name)" +
-    "&pageSize=100";
+    "&fields=files(id,name)";
 
   const res = await fetch(url, {
     headers: {
@@ -54,74 +54,26 @@ async function loadNotes() {
 
   if (!res.ok) {
     const err = await res.text();
-    console.error("Drive list error:", err);
-    alert("Drive error. Check console.");
+    console.error("LIST FAILED:", err);
+    alert("LIST FAILED — check console");
     return;
   }
 
   const data = await res.json();
-  renderList(data.files || []);
-}
-
-
-function renderList(files) {
   notesList.innerHTML = "";
 
-  files.forEach(file => {
-    const title = file.name.replace(".note.json", "");
-
+  data.files.forEach(f => {
     const li = document.createElement("li");
-    li.className = "note-item";
-
-    const t = document.createElement("div");
-    t.className = "note-title";
-    t.textContent = title || "Untitled";
-    t.onclick = () => openNote(file.id, title);
-
-    const actions = document.createElement("div");
-    actions.className = "note-actions";
-
-    const del = document.createElement("button");
-    del.textContent = "🗑";
-    del.onclick = e => {
-      e.stopPropagation();
-      deleteNote(file.id);
-    };
-
-    actions.appendChild(del);
-    li.appendChild(t);
-    li.appendChild(actions);
+    li.textContent = f.name;
     notesList.appendChild(li);
   });
 }
 
-// after renderList(), call this helper when opening a note
-function markSelected(id){
-  document.querySelectorAll('.note-item').forEach(li=>{
-    li.classList.toggle('selected', li.dataset.id === id);
-  });
-}
-
-
-/* ---------- OPEN ---------- */
-
-async function openNote(id, title) {
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-
-  const data = await res.json();
-  currentFileId = id;
-  titleInput.value = title;
-  contentInput.value = data.content || "";
-}
-
-/* ---------- CREATE ---------- */
+/* ================= CREATE NOTE ================= */
 
 async function createNote() {
-  const meta = await fetch(
-    "https://www.googleapis.com/drive/v3/files",
+  const res = await fetch(
+    "https://www.googleapis.com/drive/v3/files?fields=id",
     {
       method: "POST",
       headers: {
@@ -135,9 +87,16 @@ async function createNote() {
     }
   );
 
-  const file = await meta.json();
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("CREATE FAILED:", err);
+    alert("CREATE FAILED — check console");
+    return;
+  }
 
-  await fetch(
+  const file = await res.json();
+
+  const upload = await fetch(
     `https://www.googleapis.com/upload/drive/v3/files/${file.id}?uploadType=media`,
     {
       method: "PATCH",
@@ -149,74 +108,13 @@ async function createNote() {
     }
   );
 
-  currentFileId = file.id;
-  titleInput.value = "Untitled";
-  contentInput.value = "";
-
-  loadNotes();
-}
-
-/* ---------- SAVE ---------- */
-
-function scheduleSave() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNote, 500);
-}
-
-async function saveNote() {
-  if (!currentFileId) return;
-
-  const title = cleanTitle(titleInput.value);
-
-  await fetch(
-    `https://www.googleapis.com/drive/v3/files/${currentFileId}`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ name: `${title}.note.json` })
-    }
-  );
-
-  await fetch(
-    `https://www.googleapis.com/upload/drive/v3/files/${currentFileId}?uploadType=media`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ content: contentInput.value })
-    }
-  );
-
-  loadNotes();
-}
-
-titleInput.oninput = scheduleSave;
-contentInput.oninput = scheduleSave;
-
-/* ---------- DELETE ---------- */
-
-async function deleteNote(id) {
-  if (!confirm("Delete note?")) return;
-
-  await fetch(
-    `https://www.googleapis.com/drive/v3/files/${id}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    }
-  );
-
-  if (id === currentFileId) {
-    currentFileId = null;
-    titleInput.value = "";
-    contentInput.value = "";
+  if (!upload.ok) {
+    const err = await upload.text();
+    console.error("UPLOAD FAILED:", err);
+    alert("UPLOAD FAILED — check console");
+    return;
   }
 
-  loadNotes();
+  listNotes();
 }
 
