@@ -2,35 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Glass Notes</title>
+  <title>Blackline Notes</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<div id="login-screen">
-  <h1>Glass Notes</h1>
-  <button id="login-btn">Sign in with Google</button>
-</div>
+<div class="ambient ambient-left"></div>
+<div class="ambient ambient-right"></div>
 
-<div id="app" class="hidden">
+<section id="login-screen">
+  <div class="login-card">
+    <p class="eyebrow">Private Workspace</p>
+    <h1>Blackline Notes</h1>
+    <p class="login-copy">
+      A darker, focused writing space that keeps your notes synced to Google Drive.
+    </p>
+    <div class="login-actions">
+      <button id="login-btn">Continue with Google</button>
+      <p class="login-meta">Encrypted by your Google session. Minimal surface. Fast editing.</p>
+      <p id="auth-error" class="auth-error hidden"></p>
+    </div>
+  </div>
+</section>
+
+<section id="app" class="hidden">
   <aside class="sidebar">
-    <button id="new-note" class="add-btn">＋ New Note</button>
+    <div class="sidebar-top">
+      <div>
+        <p class="eyebrow">Workspace</p>
+        <h2>Notes</h2>
+      </div>
+      <button id="new-note" class="add-btn">New Note</button>
+    </div>
+
+    <div class="sidebar-meta">
+      <span id="notes-count">0 notes</span>
+      <span class="sidebar-dot"></span>
+      <span>Google Drive sync</span>
+    </div>
+
     <ul id="notes-list"></ul>
   </aside>
 
-  <main class="editor">
-    <input id="note-title" placeholder="Untitled" />
-    <textarea id="note-content" placeholder="Start writing..."></textarea>
+  <main class="editor-shell">
+    <header class="editor-topbar">
+      <div>
+        <p class="eyebrow">Editor</p>
+        <h2 id="workspace-title">Untitled note</h2>
+      </div>
+      <div class="status-pill" id="save-status">Waiting for changes</div>
+    </header>
+
+    <section class="editor">
+      <div id="empty-state" class="empty-state">
+        <p class="eyebrow">Ready</p>
+        <h3>Select a note or create a new one</h3>
+        <p>Your writing area will appear here once a note is open.</p>
+      </div>
+
+      <div id="editor-fields" class="editor-fields hidden">
+        <input id="note-title" placeholder="Untitled" />
+        <textarea id="note-content" placeholder="Start writing..."></textarea>
+      </div>
+    </section>
   </main>
-</div>
+</section>
 
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
   window.onGoogleLibraryLoad = () => {};
 </script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 
 </body>
 </html>
-
