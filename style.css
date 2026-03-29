@@ -27,11 +27,13 @@
 html,
 body {
   margin: 0;
+  height: 100%;
   min-height: 100%;
 }
 
 body {
   position: relative;
+  min-height: 100dvh;
   overflow: hidden;
   background:
     radial-gradient(circle at top left, rgba(216, 162, 94, 0.16), transparent 28%),
@@ -90,6 +92,7 @@ button {
 #login-screen {
   position: relative;
   z-index: 1;
+  min-height: 100dvh;
   min-height: 100vh;
   padding: 2rem;
   display: grid;
@@ -182,7 +185,11 @@ button {
 #app {
   position: relative;
   z-index: 1;
+  min-height: 100dvh;
   min-height: 100vh;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
   padding: 1.4rem;
   display: grid;
   grid-template-columns: 360px minmax(0, 1fr);
@@ -205,6 +212,7 @@ button {
   padding: 1.35rem;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .sidebar-top {
@@ -319,6 +327,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-height: 0;
 }
 
 .editor-topbar {
@@ -405,6 +414,7 @@ button {
 
 #note-content {
   flex: 1;
+  min-height: 20rem;
   resize: none;
   padding: 0;
   color: #ddd6ca;
@@ -430,11 +440,12 @@ button {
 
   #app {
     grid-template-columns: 1fr;
-    min-height: auto;
+    min-height: 100dvh;
+    max-width: 920px;
   }
 
   .sidebar {
-    min-height: 24rem;
+    min-height: 20rem;
   }
 
   .editor {
@@ -442,10 +453,31 @@ button {
   }
 }
 
+@media (min-width: 981px) {
+  .sidebar {
+    max-height: calc(100dvh - 2.8rem);
+  }
+
+  .editor-shell {
+    max-height: calc(100dvh - 2.8rem);
+  }
+
+  #notes-list,
+  .editor,
+  .editor-fields,
+  #note-content {
+    min-height: 0;
+  }
+}
+
 @media (max-width: 640px) {
   #login-screen,
   #app {
-    padding: 1rem;
+    padding:
+      max(0.9rem, env(safe-area-inset-top))
+      max(0.85rem, env(safe-area-inset-right))
+      max(0.9rem, env(safe-area-inset-bottom))
+      max(0.85rem, env(safe-area-inset-left));
   }
 
   .login-card,
@@ -455,20 +487,122 @@ button {
   }
 
   .login-card {
-    padding: 1.6rem;
+    width: 100%;
+    padding: 1.4rem;
   }
 
-  .sidebar-top,
-  .editor-topbar {
-    flex-direction: column;
+  #login-btn,
+  .add-btn {
+    width: 100%;
+  }
+
+  #app {
+    gap: 0.85rem;
+    max-width: none;
+  }
+
+  .sidebar {
+    min-height: auto;
+    max-height: 38dvh;
+    padding: 1rem;
+  }
+
+  .sidebar-top {
     align-items: stretch;
   }
 
+  .sidebar-meta {
+    flex-wrap: wrap;
+  }
+
+  #notes-list {
+    max-height: 22dvh;
+    padding-right: 0.1rem;
+  }
+
+  .note-item {
+    padding: 0.85rem 0.85rem 0.85rem 0.9rem;
+  }
+
+  .editor-shell {
+    min-height: 54dvh;
+    max-height: none;
+    padding: 0.9rem;
+  }
+
+  .editor-topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .status-pill {
+    width: fit-content;
+  }
+
+  .editor {
+    min-height: 50dvh;
+    max-height: none;
+  }
+
+  .empty-state {
+    padding: 1.4rem;
+  }
+
+  .empty-state h3 {
+    font-size: 1.7rem;
+  }
+
   .editor-fields {
-    padding: 1.2rem;
+    padding: 1.1rem 1rem 1rem;
   }
 
   #note-title {
-    font-size: 2rem;
+    font-size: 1.9rem;
+  }
+
+  #note-content {
+    min-height: 38dvh;
+    font-size: 16px;
+    line-height: 1.7;
+  }
+}
+
+@media (max-width: 420px) {
+  .login-card h1 {
+    font-size: 2.5rem;
+  }
+
+  .sidebar-top h2,
+  .editor-topbar h2 {
+    font-size: 1.45rem;
+  }
+
+  .editor-fields {
+    padding: 1rem 0.9rem 0.9rem;
+  }
+
+  #note-title {
+    font-size: 1.65rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  #app {
+    grid-template-columns: 390px minmax(0, 1fr);
+    gap: 1.4rem;
+    padding: 1.5rem;
+  }
+
+  .sidebar {
+    padding: 1.5rem;
+  }
+
+  .editor-shell {
+    padding: 1.4rem;
+  }
+
+  .editor-fields {
+    padding: 2rem 2rem 1.6rem;
   }
 }
